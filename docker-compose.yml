@@ -1,0 +1,32 @@
+services:
+  app:
+    build: ./app
+    ports:
+      - "8080:5173"
+    privileged: true
+    security_opt:
+      - apparmor=unconfined
+    volumes:
+      - ./app:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - VITE_POCKETBASE_URL=http://pocketbase:8080
+    depends_on:
+      - pocketbase
+    networks:
+      - mealnet
+
+  pocketbase:
+    build: ./pb
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./pb_data:/pb/pb_data
+      - ./pb/pb_migrations:/pb/pb_migrations
+    networks:
+      - mealnet
+
+networks:
+  mealnet:
