@@ -23,7 +23,7 @@ export default defineConfig({
         icons: [
           {
             src: '/icons/icon-192.png',
-            sizes: '192x192',
+            sizes: '180x180',
             type: 'image/png'
           },
           {
@@ -34,7 +34,7 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: true
+        enabled: false
       }
     })
   ],
