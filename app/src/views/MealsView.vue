@@ -77,6 +77,7 @@
           </button>
           <button v-if="selectedTags.length" class="text-xs text-violet-600" @click="selectedTags = []">Clear</button>
         </div>
+        <p v-if="!selectionMode" class="mt-2 text-xs text-slate-500">Double tap a meal to edit.</p>
       </div>
 
       <div v-if="selectionMode" class="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -85,8 +86,11 @@
           <button class="btn-secondary" @click="clearSelection">Deselect all</button>
         </div>
         <div class="mt-3 space-y-2">
-          <input v-model="bulkTagInput" class="input" placeholder="Add tag to selected" />
-          <button class="btn-secondary" @click="applyBulkTags">Add tag</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <input v-model="bulkTagInput" class="input flex-1" placeholder="Add tag to selected" />
+            <button class="btn-secondary" @click="applyBulkTags">Add tag</button>
+          </div>
+          <p class="text-xs text-slate-500">Removing a tag here removes it from all selected meals.</p>
           <div class="flex flex-wrap gap-2">
             <span v-for="tag in commonTags" :key="tag" class="pill">
               {{ tag }}
@@ -94,7 +98,7 @@
             </span>
           </div>
         </div>
-        <div class="mt-3">
+        <div class="mt-3 flex justify-end">
           <button class="btn-danger" :disabled="!selectedIds.length" @click="confirmBulkDelete = true">
             Delete {{ selectedIds.length }} meals
           </button>
@@ -232,6 +236,8 @@ const editName = ref('')
 const editTags = ref([])
 const editTagInput = ref('')
 const tagPickerOpen = ref(false)
+const lastTapId = ref(null)
+const lastTapAt = ref(0)
 const confirmBulkDelete = ref(false)
 
 const duplicateModalOpen = ref(false)
@@ -352,7 +358,11 @@ const handleRowClick = (meal) => {
     toggleSelected(meal.id)
     return
   }
-  if (editingId.value === meal.id) return
+  const now = performance.now()
+  const isDoubleTap = lastTapId.value === meal.id && now - lastTapAt.value < 350
+  lastTapId.value = meal.id
+  lastTapAt.value = now
+  if (!isDoubleTap || editingId.value === meal.id) return
   editingId.value = meal.id
   editName.value = meal.name
   editTags.value = [...meal.tags]
