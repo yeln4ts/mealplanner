@@ -15,12 +15,16 @@
           </span>
         </h1>
       </div>
-      <div class="text-xs text-slate-500">
-        <span class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700" v-if="storageMode === 'local'">
-          Local
-        </span>
-        <span class="rounded-full bg-indigo-100 px-2 py-1 text-indigo-700" v-else>
-          PocketBase
+      <div class="flex items-center gap-1 text-xs text-slate-500">
+        <span
+          class="inline-flex items-center gap-1 rounded-full px-2 py-1"
+          :class="isOnline ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'"
+          :title="isOnline ? 'Connected' : 'Not connected'"
+        >
+          <span class="material-icons text-[14px]">
+            {{ isOnline ? 'cloud_done' : 'cloud_off' }}
+          </span>
+          <span>{{ isOnline ? 'Connected' : 'Not connected' }}</span>
         </span>
       </div>
     </div>
@@ -28,7 +32,24 @@
 </template>
 
 <script setup>
-import { POCKETBASE_URL } from '../../config'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-const storageMode = POCKETBASE_URL ? 'pocketbase' : 'local'
+const isOnline = ref(true)
+
+const updateOnlineStatus = () => {
+  if (typeof navigator !== 'undefined') {
+    isOnline.value = navigator.onLine
+  }
+}
+
+onMounted(() => {
+  updateOnlineStatus()
+  window.addEventListener('online', updateOnlineStatus)
+  window.addEventListener('offline', updateOnlineStatus)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('online', updateOnlineStatus)
+  window.removeEventListener('offline', updateOnlineStatus)
+})
 </script>
