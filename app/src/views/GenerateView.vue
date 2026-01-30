@@ -3,28 +3,36 @@
     <div class="card p-4 space-y-3">
       <div class="flex items-center justify-between">
         <h2 class="text-base font-semibold text-slate-900">Quick generate</h2>
-        <div class="flex items-center gap-2 text-xs text-slate-500">
-          <span>Presets</span>
-          <button class="text-violet-600" @click="deleteMode = !deleteMode">
-            {{ deleteMode ? 'Done' : 'Delete' }}
-          </button>
-        </div>
+        <button
+          v-if="store.presets.length"
+          class="btn-secondary text-xs"
+          @click="deleteMode = !deleteMode"
+        >
+          {{ deleteMode ? 'Exit delete' : 'Delete presets' }}
+        </button>
+      </div>
+      <div v-if="deleteMode" class="text-xs text-slate-600">
+        <span class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-2 py-0.5 font-medium text-red-700">
+          Delete mode · Click the × on a preset to delete it.
+        </span>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button
-          v-for="preset in store.presets"
-          :key="preset.id"
-          class="pill"
-          :class="deleteMode ? 'cursor-default opacity-80' : ''"
-          @click="onPresetClick(preset)"
-        >
-          {{ preset.name }}
-          <span
-            v-if="deleteMode"
-            class="ml-1 text-red-500"
-            @click.stop="store.deletePreset(preset.id)"
-          >×</span>
-        </button>
+        <template v-for="preset in store.presets" :key="preset.id">
+          <button
+            v-if="!deleteMode"
+            class="pill"
+            @click="onPresetClick(preset)"
+          >
+            {{ preset.name }}
+          </button>
+          <span v-else class="pill">
+            {{ preset.name }}
+            <button
+              class="text-violet-800"
+              @click.stop="store.deletePreset(preset.id)"
+            >×</button>
+          </span>
+        </template>
         <p v-if="!store.presets.length" class="text-xs text-slate-500">No presets saved yet.</p>
       </div>
     </div>
@@ -171,7 +179,7 @@
                   v-for="tag in store.allTags"
                   :key="`lunch-${tag}`"
                   class="pill"
-                  :class="selectedConstraintTagsLunch.includes(tag) ? 'bg-violet-200 text-violet-900' : ''"
+                  :class="selectedConstraintTagsLunch.includes(tag) ? 'pill-selected' : ''"
                   @click="toggleConstraintTag(tag, 'lunch')"
                 >
                   {{ tag }}
@@ -190,7 +198,7 @@
                   v-for="tag in store.allTags"
                   :key="`dinner-${tag}`"
                   class="pill"
-                  :class="selectedConstraintTagsDinner.includes(tag) ? 'bg-violet-200 text-violet-900' : ''"
+                  :class="selectedConstraintTagsDinner.includes(tag) ? 'pill-selected' : ''"
                   @click="toggleConstraintTag(tag, 'dinner')"
                 >
                   {{ tag }}

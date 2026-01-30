@@ -4,7 +4,41 @@
       <h2 class="text-base font-semibold text-slate-900">Add a meal</h2>
       <div class="mt-3 grid gap-2">
         <input v-model="singleName" class="input" placeholder="Meal name" @keydown.enter.prevent="handleAddSingle" />
-        <input v-model="singleTags" class="input" placeholder="Tags (comma separated)" @keydown.enter.prevent="handleAddSingle" />
+        <div class="flex flex-wrap gap-2">
+          <span v-for="tag in createTags" :key="tag" class="pill">
+            {{ tag }}
+            <button class="text-violet-800" @click.stop="removeCreateTag(tag)">×</button>
+          </span>
+          <span v-if="!createTags.length" class="text-xs text-slate-400">No tags yet</span>
+        </div>
+        <div class="relative tag-picker">
+          <div class="flex flex-wrap items-center gap-2">
+            <input
+              v-model="createTagInput"
+              class="input flex-1"
+              placeholder="Add tag"
+              @focus="createTagPickerOpen = true"
+              @keydown.enter.prevent="addCreateTag"
+            />
+            <button class="btn-secondary" @click="addCreateTag">Add tag</button>
+          </div>
+          <div
+            v-if="createTagPickerOpen"
+            class="absolute z-10 mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+          >
+            <div class="max-h-40 overflow-y-auto">
+              <button
+                v-for="tag in filteredCreateTags"
+                :key="tag"
+                class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                @click.stop="selectCreateTag(tag)"
+              >
+                {{ tag }}
+              </button>
+              <p v-if="!filteredCreateTags.length" class="px-2 py-1 text-xs text-slate-500">No matches</p>
+            </div>
+          </div>
+        </div>
         <button class="btn-primary" @click="handleAddSingle">Add meal</button>
       </div>
       <button class="mt-4 text-sm font-medium text-violet-600" @click="bulkOpen = !bulkOpen">
@@ -18,7 +52,7 @@
 
     <div class="card p-4 space-y-3">
       <div class="flex items-center justify-between">
-        <h2 class="text-base font-semibold text-slate-900">Meals</h2>
+        <h2 class="text-base font-semibold text-slate-900">{{ mealCountLabel }}</h2>
         <button class="btn-secondary" @click="toggleSelection">
           {{ selectionMode ? 'Done' : 'Select' }}
         </button>
@@ -31,7 +65,7 @@
             v-for="tag in visibleTags"
             :key="tag"
             class="pill"
-            :class="selectedTags.includes(tag) ? 'bg-violet-200 text-violet-900' : ''"
+            :class="selectedTags.includes(tag) ? 'pill-selected' : ''"
             @click="toggleTag(tag)"
           >
             {{ tag }}
@@ -149,9 +183,6 @@
               {{ store.isInQueue(meal.id, 'dinner') ? '✓ Dinner' : '+ Dinner' }}
             </button>
             <div class="flex-1"></div>
-            <button class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 hover:bg-rose-50" @click.stop="deleteMeal(meal.id)">
-              <span class="material-icons">delete</span>
-            </button>
           </div>
         </div>
       </div>
@@ -185,7 +216,9 @@ import ConfirmModal from '../components/modals/ConfirmModal.vue'
 const store = useMealStore()
 
 const singleName = ref('')
-const singleTags = ref('')
+const createTags = ref([])
+const createTagInput = ref('')
+const createTagPickerOpen = ref(false)
 const bulkOpen = ref(false)
 const bulkText = ref('')
 const searchQuery = ref('')
@@ -214,6 +247,10 @@ const filteredMeals = computed(() => {
     const matchesTags = selectedTags.value.every((tag) => meal.tags.includes(tag))
     return matchesQuery && matchesTags
   })
+})
+const mealCountLabel = computed(() => {
+  const count = filteredMeals.value.length
+  return `${count} ${count === 1 ? 'Meal' : 'Meals'}`
 })
 
 const commonTags = computed(() => {
@@ -249,7 +286,8 @@ const enqueueDuplicate = (name, tags, similarMeals) => {
 const handleAddSingle = async () => {
   if (!singleName.value.trim()) return
   const name = singleName.value.trim()
-  const tags = normalizeTags(singleTags.value)
+  if (createTagInput.value.trim()) addCreateTag()
+  const tags = [...new Set(createTags.value.map((tag) => tag.toLowerCase().trim()).filter(Boolean))]
   const similarMeals = findSimilarMeals(name, store.meals)
   if (similarMeals.length) {
     enqueueDuplicate(name, tags, similarMeals)
@@ -257,7 +295,9 @@ const handleAddSingle = async () => {
     await store.addMeal(name, tags)
   }
   singleName.value = ''
-  singleTags.value = ''
+  createTags.value = []
+  createTagInput.value = ''
+  createTagPickerOpen.value = false
 }
 
 const handleBulkAdd = async () => {
@@ -409,10 +449,40 @@ const selectEditTag = (tag) => {
   editTagInput.value = ''
 }
 
+const addCreateTag = () => {
+  const tags = normalizeTags(createTagInput.value)
+  if (!tags.length) return
+  for (const tag of tags) {
+    if (!createTags.value.includes(tag)) {
+      createTags.value.push(tag)
+    }
+  }
+  createTagInput.value = ''
+}
+
+const removeCreateTag = (tag) => {
+  createTags.value = createTags.value.filter((t) => t !== tag)
+}
+
+const filteredCreateTags = computed(() => {
+  const query = createTagInput.value.trim().toLowerCase()
+  const base = store.allTags.filter((tag) => !createTags.value.includes(tag))
+  if (!query) return base.slice(0, 8)
+  return base.filter((tag) => tag.includes(query)).slice(0, 10)
+})
+
+const selectCreateTag = (tag) => {
+  if (!createTags.value.includes(tag)) {
+    createTags.value.push(tag)
+  }
+  createTagInput.value = ''
+}
+
 const handleTagPickerClick = (event) => {
   const within = event.target.closest?.('.tag-picker')
   if (within) return
   tagPickerOpen.value = false
+  createTagPickerOpen.value = false
 }
 
 onMounted(() => {
@@ -422,10 +492,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', handleTagPickerClick, true)
 })
-
-const deleteMeal = async (mealId) => {
-  await store.deleteMeal(mealId)
-}
 
 const toggleQueue = (mealId, mealType) => {
   store.toggleInQueue(mealId, mealType)
