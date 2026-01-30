@@ -8,8 +8,6 @@ services:
     volumes:
       - ./app:/app
       - /app/node_modules
-    environment:
-      - VITE_POCKETBASE_URL=http://pocketbase:8080
     depends_on:
       - pocketbase
     networks:
@@ -22,8 +20,6 @@ services:
       target: prod
     ports:
       - "8080:80"
-    environment:
-      - VITE_POCKETBASE_URL=http://pocketbase:8080
     depends_on:
       - pocketbase
     networks:
@@ -33,8 +29,6 @@ services:
   pocketbase:
     build: ./pb
     restart: unless-stopped
-    ports:
-      - "8090:8080"
     volumes:
       - ./pb_data:/pb/pb_data
       - ./pb/pb_migrations:/pb/pb_migrations

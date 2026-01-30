@@ -41,6 +41,16 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     host: true,
-    port: 5173
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://pocketbase:8080',
+	changeOrigin: true
+      },
+      '/_/': {
+        target: 'http://pocketbase:8080',
+	changeOrigin: true
+      }
+    }
   }
 })
