@@ -11,31 +11,38 @@
           </span>
           <span v-if="!createTags.length" class="text-xs text-slate-400">No tags yet</span>
         </div>
-        <div class="relative tag-picker">
-          <div class="flex flex-wrap items-center gap-2">
-            <input
-              v-model="createTagInput"
-              class="input flex-1"
-              placeholder="Add tag"
-              @focus="createTagPickerOpen = true"
-              @keydown.enter.prevent="addCreateTag"
-            />
-            <button class="btn-secondary" @click="addCreateTag">Add tag</button>
-          </div>
+        <div class="relative flex flex-wrap items-center gap-2">
+          <button class="btn-secondary" @click="openCreateSheet">Select tags</button>
+          <button v-if="createTags.length" class="text-xs text-violet-600" @click="createTags = []">Clear tags</button>
           <div
-            v-if="createTagPickerOpen"
-            class="absolute z-10 mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+            v-if="createSheetOpen"
+            class="absolute left-0 top-full z-10 mt-2 hidden max-h-[70vh] w-full rounded-2xl bg-white p-4 shadow-2xl sm:block sm:w-[26rem]"
           >
-            <div class="max-h-40 overflow-y-auto">
-              <button
-                v-for="tag in filteredCreateTags"
-                :key="tag"
-                class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
-                @click.stop="selectCreateTag(tag)"
-              >
-                {{ tag }}
-              </button>
-              <p v-if="!filteredCreateTags.length" class="px-2 py-1 text-xs text-slate-500">No matches</p>
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-slate-900">Select tags</h3>
+              <button class="text-sm text-slate-500" @click="closeCreateSheet">Done</button>
+            </div>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <input
+                v-model="createTagInput"
+                class="input flex-1"
+                placeholder="Search or add tag"
+                @keydown.enter.prevent="addCreateTag"
+              />
+              <button class="btn-secondary" @click="addCreateTag">Add tag</button>
+            </div>
+            <div class="mt-3 max-h-48 overflow-y-auto">
+              <div class="flex flex-wrap gap-2">
+                <button
+                  v-for="tag in filteredCreateTags"
+                  :key="tag"
+                  class="pill"
+                  @click="selectCreateTag(tag)"
+                >
+                  {{ tag }}
+                </button>
+                <p v-if="!filteredCreateTags.length" class="text-xs text-slate-500">No matches</p>
+              </div>
             </div>
           </div>
         </div>
@@ -83,12 +90,42 @@
       <div v-if="selectionMode" class="rounded-xl border border-slate-200 bg-slate-50 p-3">
         <div class="flex flex-wrap items-center gap-2">
           <button class="btn-secondary" @click="selectAll">Select all</button>
-          <button class="btn-secondary" @click="clearSelection">Deselect all</button>
+          <button v-if="selectedIds.length" class="btn-secondary" @click="clearSelection">Deselect all</button>
         </div>
-        <div class="mt-3 space-y-2">
-          <div class="flex flex-wrap items-center gap-2">
-            <input v-model="bulkTagInput" class="input flex-1" placeholder="Add tag to selected" />
-            <button class="btn-secondary" @click="applyBulkTags">Add tag</button>
+        <div v-if="selectedIds.length" class="mt-3 space-y-2">
+          <div class="relative flex flex-wrap items-center gap-2">
+            <button class="btn-secondary" @click="bulkSheetOpen = true">Add tags to selected</button>
+            <div
+              v-if="bulkSheetOpen"
+              class="absolute left-0 top-full z-10 mt-2 hidden max-h-[70vh] w-full rounded-2xl bg-white p-4 shadow-2xl sm:block sm:w-[26rem]"
+            >
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-slate-900">Select tag</h3>
+                <button class="text-sm text-slate-500" @click="closeBulkSheet">Done</button>
+              </div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <input
+                  v-model="bulkTagInput"
+                  class="input flex-1"
+                  placeholder="Search or add tag"
+                  @keydown.enter.prevent="applyBulkTags"
+                />
+                <button class="btn-secondary" @click="applyBulkTags">Add tag</button>
+              </div>
+              <div class="mt-3 max-h-48 overflow-y-auto">
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    v-for="tag in filteredBulkTags"
+                    :key="tag"
+                    class="pill"
+                    @click="selectBulkTag(tag)"
+                  >
+                    {{ tag }}
+                  </button>
+                  <p v-if="!filteredBulkTags.length" class="text-xs text-slate-500">No matches</p>
+                </div>
+              </div>
+            </div>
           </div>
           <p class="text-xs text-slate-500">Removing a tag here removes it from all selected meals.</p>
           <div class="flex flex-wrap gap-2">
@@ -98,8 +135,8 @@
             </span>
           </div>
         </div>
-        <div class="mt-3 flex justify-end">
-          <button class="btn-danger" :disabled="!selectedIds.length" @click="confirmBulkDelete = true">
+        <div v-if="selectedIds.length" class="mt-3 flex justify-end">
+          <button class="btn-danger" @click="confirmBulkDelete = true">
             Delete {{ selectedIds.length }} meals
           </button>
         </div>
@@ -137,31 +174,37 @@
                 </span>
                 <span v-if="!editTags.length" class="text-xs text-slate-400">No tags yet</span>
               </div>
-              <div class="relative tag-picker">
-                <div class="flex flex-wrap items-center gap-2">
-                  <input
-                    v-model="editTagInput"
-                    class="input flex-1"
-                    placeholder="Add tag"
-                    @focus="tagPickerOpen = true"
-                    @keydown.enter.prevent="addEditTag"
-                  />
-                  <button class="btn-secondary" @click.stop="addEditTag">Add tag</button>
-                </div>
+              <div class="relative flex flex-wrap items-center gap-2">
+                <button class="btn-secondary" @click.stop="editSheetOpen = true">Select tags</button>
                 <div
-                  v-if="tagPickerOpen"
-                  class="absolute z-10 mt-2 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+                  v-if="editSheetOpen"
+                  class="absolute left-0 top-full z-10 mt-2 hidden max-h-[70vh] w-full rounded-2xl bg-white p-4 shadow-2xl sm:block sm:w-[26rem]"
                 >
-                  <div class="max-h-40 overflow-y-auto">
-                    <button
-                      v-for="tag in filteredEditTags"
-                      :key="tag"
-                      class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
-                      @click.stop="selectEditTag(tag)"
-                    >
-                      {{ tag }}
-                    </button>
-                    <p v-if="!filteredEditTags.length" class="px-2 py-1 text-xs text-slate-500">No matches</p>
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-slate-900">Select tags</h3>
+                    <button class="text-sm text-slate-500" @click="closeEditSheet">Done</button>
+                  </div>
+                  <div class="mt-3 flex flex-wrap gap-2">
+                    <input
+                      v-model="editTagInput"
+                      class="input flex-1"
+                      placeholder="Search or add tag"
+                      @keydown.enter.prevent="addEditTag"
+                    />
+                    <button class="btn-secondary" @click="addEditTag">Add tag</button>
+                  </div>
+                  <div class="mt-3 max-h-48 overflow-y-auto">
+                    <div class="flex flex-wrap gap-2">
+                      <button
+                        v-for="tag in filteredEditTags"
+                        :key="tag"
+                        class="pill"
+                        @click="selectEditTag(tag)"
+                      >
+                        {{ tag }}
+                      </button>
+                      <p v-if="!filteredEditTags.length" class="text-xs text-slate-500">No matches</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -207,6 +250,102 @@
       @cancel="confirmBulkDelete = false"
       @confirm="performBulkDelete"
     />
+
+    <div v-if="editSheetOpen" class="fixed inset-0 z-50 sm:hidden">
+      <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+      <div class="absolute bottom-0 left-0 right-0 max-h-[70vh] rounded-t-2xl bg-white p-4 shadow-2xl">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-slate-900">Select tags</h3>
+          <button class="text-sm text-slate-500" @click="closeEditSheet">Done</button>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <input
+            v-model="editTagInput"
+            class="input flex-1"
+            placeholder="Search or add tag"
+            @keydown.enter.prevent="addEditTag"
+          />
+          <button class="btn-secondary" @click="addEditTag">Add tag</button>
+        </div>
+        <div class="mt-3 max-h-48 overflow-y-auto">
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="tag in filteredEditTags"
+              :key="tag"
+              class="pill"
+              @click="selectEditTag(tag)"
+            >
+              {{ tag }}
+            </button>
+            <p v-if="!filteredEditTags.length" class="text-xs text-slate-500">No matches</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="bulkSheetOpen" class="fixed inset-0 z-50 sm:hidden">
+      <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+      <div class="absolute bottom-0 left-0 right-0 max-h-[70vh] rounded-t-2xl bg-white p-4 shadow-2xl">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-slate-900">Select tag</h3>
+          <button class="text-sm text-slate-500" @click="closeBulkSheet">Done</button>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <input
+            v-model="bulkTagInput"
+            class="input flex-1"
+            placeholder="Search or add tag"
+            @keydown.enter.prevent="applyBulkTags"
+          />
+          <button class="btn-secondary" @click="applyBulkTags">Add tag</button>
+        </div>
+        <div class="mt-3 max-h-48 overflow-y-auto">
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="tag in filteredBulkTags"
+              :key="tag"
+              class="pill"
+              @click="selectBulkTag(tag)"
+            >
+              {{ tag }}
+            </button>
+            <p v-if="!filteredBulkTags.length" class="text-xs text-slate-500">No matches</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="createSheetOpen" class="fixed inset-0 z-50 sm:hidden">
+      <button class="absolute inset-0 bg-black/40" @click="closeCreateSheet" aria-label="Close"></button>
+      <div class="absolute bottom-0 left-0 right-0 max-h-[70vh] rounded-t-2xl bg-white p-4 shadow-2xl">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold text-slate-900">Select tags</h3>
+          <button class="text-sm text-slate-500" @click="closeCreateSheet">Done</button>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <input
+            v-model="createTagInput"
+            class="input flex-1"
+            placeholder="Search or add tag"
+            @keydown.enter.prevent="addCreateTag"
+          />
+          <button class="btn-secondary" @click="addCreateTag">Add tag</button>
+        </div>
+        <div class="mt-3 max-h-48 overflow-y-auto">
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="tag in filteredCreateTags"
+              :key="tag"
+              class="pill"
+              @click="selectCreateTag(tag)"
+            >
+              {{ tag }}
+            </button>
+            <p v-if="!filteredCreateTags.length" class="text-xs text-slate-500">No matches</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -222,7 +361,7 @@ const store = useMealStore()
 const singleName = ref('')
 const createTags = ref([])
 const createTagInput = ref('')
-const createTagPickerOpen = ref(false)
+const createSheetOpen = ref(false)
 const bulkOpen = ref(false)
 const bulkText = ref('')
 const searchQuery = ref('')
@@ -231,11 +370,12 @@ const tagsExpanded = ref(false)
 const selectionMode = ref(false)
 const selectedIds = ref([])
 const bulkTagInput = ref('')
+const bulkSheetOpen = ref(false)
 const editingId = ref(null)
 const editName = ref('')
 const editTags = ref([])
 const editTagInput = ref('')
-const tagPickerOpen = ref(false)
+const editSheetOpen = ref(false)
 const lastTapId = ref(null)
 const lastTapAt = ref(0)
 const confirmBulkDelete = ref(false)
@@ -303,7 +443,7 @@ const handleAddSingle = async () => {
   singleName.value = ''
   createTags.value = []
   createTagInput.value = ''
-  createTagPickerOpen.value = false
+  closeCreateSheet()
 }
 
 const handleBulkAdd = async () => {
@@ -420,7 +560,6 @@ const saveEdit = async () => {
   meal.name = editName.value.trim() || meal.name
   meal.tags = [...new Set(editTags.value.map((tag) => tag.toLowerCase().trim()).filter(Boolean))]
   await store.updateMeal(meal)
-  tagPickerOpen.value = false
   cancelEdit()
 }
 
@@ -429,7 +568,7 @@ const cancelEdit = () => {
   editName.value = ''
   editTags.value = []
   editTagInput.value = ''
-  tagPickerOpen.value = false
+  editSheetOpen.value = false
 }
 
 const addEditTag = () => {
@@ -448,8 +587,15 @@ const removeEditTag = (tag) => {
 const filteredEditTags = computed(() => {
   const query = editTagInput.value.trim().toLowerCase()
   const base = store.allTags.filter((tag) => !editTags.value.includes(tag))
-  if (!query) return base.slice(0, 8)
-  return base.filter((tag) => tag.includes(query)).slice(0, 10)
+  if (!query) return base
+  return base.filter((tag) => tag.includes(query))
+})
+
+const filteredBulkTags = computed(() => {
+  const query = bulkTagInput.value.trim().toLowerCase()
+  const base = store.allTags
+  if (!query) return base
+  return base.filter((tag) => tag.includes(query))
 })
 
 const selectEditTag = (tag) => {
@@ -457,6 +603,11 @@ const selectEditTag = (tag) => {
     editTags.value.push(tag)
   }
   editTagInput.value = ''
+}
+
+const selectBulkTag = async (tag) => {
+  bulkTagInput.value = tag
+  await applyBulkTags()
 }
 
 const addCreateTag = () => {
@@ -477,8 +628,8 @@ const removeCreateTag = (tag) => {
 const filteredCreateTags = computed(() => {
   const query = createTagInput.value.trim().toLowerCase()
   const base = store.allTags.filter((tag) => !createTags.value.includes(tag))
-  if (!query) return base.slice(0, 8)
-  return base.filter((tag) => tag.includes(query)).slice(0, 10)
+  if (!query) return base
+  return base.filter((tag) => tag.includes(query))
 })
 
 const selectCreateTag = (tag) => {
@@ -488,20 +639,37 @@ const selectCreateTag = (tag) => {
   createTagInput.value = ''
 }
 
-const handleTagPickerClick = (event) => {
-  const within = event.target.closest?.('.tag-picker')
-  if (within) return
-  tagPickerOpen.value = false
-  createTagPickerOpen.value = false
+const openCreateSheet = () => {
+  createSheetOpen.value = true
+}
+
+const closeCreateSheet = () => {
+  createSheetOpen.value = false
+}
+
+const closeEditSheet = () => {
+  editSheetOpen.value = false
+}
+
+const closeBulkSheet = () => {
+  bulkSheetOpen.value = false
+}
+
+const handleEscape = (event) => {
+  if (event.key !== 'Escape') return
+  closeCreateSheet()
+  closeEditSheet()
+  closeBulkSheet()
 }
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleTagPickerClick, true)
+  document.addEventListener('keydown', handleEscape)
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('pointerdown', handleTagPickerClick, true)
+  document.removeEventListener('keydown', handleEscape)
 })
+
 
 const toggleQueue = (mealId, mealType) => {
   store.toggleInQueue(mealId, mealType)
