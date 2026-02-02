@@ -428,6 +428,48 @@ const replaceSearch = ref({})
 const moveMode = ref(false)
 const moveSource = ref(null)
 const queueDropdown = ref({ lunch: false, dinner: false })
+const configInitialized = ref(false)
+
+const applyConfig = (config) => {
+  if (!config) return
+  lunchCount.value = config.lunchCount ?? 0
+  dinnerCount.value = config.dinnerCount ?? 7
+  lunchUnique.value = config.lunchUnique ?? Math.max(1, lunchCount.value || 1)
+  dinnerUnique.value = config.dinnerUnique ?? Math.max(1, dinnerCount.value || 1)
+  mealPrepLunch.value = config.mealPrepLunch ?? false
+  mealPrepDinner.value = config.mealPrepDinner ?? true
+  constraintCountLunch.value = config.constraintCountLunch ?? 1
+  constraintCountDinner.value = config.constraintCountDinner ?? 1
+  tagConstraints.value = config.tagConstraints ? [...config.tagConstraints] : []
+  selectedConstraintTagsLunch.value = config.selectedConstraintTagsLunch
+    ? [...config.selectedConstraintTagsLunch]
+    : []
+  selectedConstraintTagsDinner.value = config.selectedConstraintTagsDinner
+    ? [...config.selectedConstraintTagsDinner]
+    : []
+  pinnedMeals.value = config.pinnedMeals ? [...config.pinnedMeals] : []
+  presetIncludePinned.value = config.presetIncludePinned ?? true
+  presetIncludeQueue.value = config.presetIncludeQueue ?? true
+  configOpen.value = config.configOpen ?? false
+}
+
+const captureConfig = () => ({
+  lunchCount: lunchCount.value,
+  dinnerCount: dinnerCount.value,
+  lunchUnique: lunchUnique.value,
+  dinnerUnique: dinnerUnique.value,
+  mealPrepLunch: mealPrepLunch.value,
+  mealPrepDinner: mealPrepDinner.value,
+  constraintCountLunch: constraintCountLunch.value,
+  constraintCountDinner: constraintCountDinner.value,
+  tagConstraints: [...tagConstraints.value],
+  selectedConstraintTagsLunch: [...selectedConstraintTagsLunch.value],
+  selectedConstraintTagsDinner: [...selectedConstraintTagsDinner.value],
+  pinnedMeals: [...pinnedMeals.value],
+  presetIncludePinned: presetIncludePinned.value,
+  presetIncludeQueue: presetIncludeQueue.value,
+  configOpen: configOpen.value
+})
 
 const mealTypeOptions = computed(() => {
   const types = []
@@ -540,6 +582,8 @@ const generate = async () => {
     lunchCount: lunchCount.value,
     dinnerCount: dinnerCount.value,
     mealPrepMode: mealPrepLunch.value || mealPrepDinner.value,
+    mealPrepLunch: mealPrepLunch.value,
+    mealPrepDinner: mealPrepDinner.value,
     lunchUnique: mealPrepLunch.value ? lunchUnique.value : lunchCount.value,
     dinnerUnique: mealPrepDinner.value ? dinnerUnique.value : dinnerCount.value,
     tagConstraints: tagConstraints.value,
@@ -657,12 +701,9 @@ watch(
   () => store.defaults,
   (defaults) => {
     if (!defaults) return
-    lunchCount.value = defaults.lunchCount
-    dinnerCount.value = defaults.dinnerCount
-    lunchUnique.value = defaults.lunchUnique
-    dinnerUnique.value = defaults.dinnerUnique
-    mealPrepLunch.value = defaults.mealPrepLunch
-    mealPrepDinner.value = defaults.mealPrepDinner
+    if (configInitialized.value || store.generationConfig) return
+    applyConfig(defaults)
+    configInitialized.value = true
   },
   { immediate: true, deep: true }
 )
@@ -679,10 +720,39 @@ const handleClickOutside = (event) => {
 }
 
 onMounted(() => {
+  if (store.generationConfig) {
+    applyConfig(store.generationConfig)
+    configInitialized.value = true
+  }
   document.addEventListener('click', handleClickOutside)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  store.generationConfig = captureConfig()
 })
+
+watch(
+  [
+    lunchCount,
+    dinnerCount,
+    lunchUnique,
+    dinnerUnique,
+    mealPrepLunch,
+    mealPrepDinner,
+    constraintCountLunch,
+    constraintCountDinner,
+    tagConstraints,
+    selectedConstraintTagsLunch,
+    selectedConstraintTagsDinner,
+    pinnedMeals,
+    presetIncludePinned,
+    presetIncludeQueue,
+    configOpen
+  ],
+  () => {
+    store.generationConfig = captureConfig()
+  },
+  { deep: true }
+)
 </script>

@@ -23,6 +23,7 @@ export const useMealStore = defineStore('meals', {
       mealPrepLunch: false,
       mealPrepDinner: true
     },
+    generationConfig: null,
     generationQueue: {
       lunch: [],
       dinner: []

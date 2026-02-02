@@ -49,6 +49,14 @@ function placeMeal(days, slot, meal) {
   days[slot.dayIndex][slot.mealType] = payload
 }
 
+function placePlaceholder(days, slot, message) {
+  days[slot.dayIndex][slot.mealType] = {
+    mealId: null,
+    mealName: message,
+    mealTags: []
+  }
+}
+
 function countSlots(days) {
   return days.reduce((acc, day) => {
     if (day.lunch !== undefined) acc += 1
@@ -133,6 +141,63 @@ export function generateMenu({
     }
   })
 
+  const prepByType = {
+    lunch: Boolean(config.mealPrepLunch),
+    dinner: Boolean(config.mealPrepDinner)
+  }
+  const queueByType = {
+    lunch: Array.isArray(config.queueMeals) ? config.queueMeals : [...(config.queueMeals?.lunch || [])],
+    dinner: Array.isArray(config.queueMeals) ? config.queueMeals : [...(config.queueMeals?.dinner || [])]
+  }
+  const relevantConstraints = (mealType) =>
+    (config.tagConstraints || []).filter(
+      (constraint) => !constraint.mealType || constraint.mealType === mealType
+    )
+
+  const fillNonPrepSlot = (slot) => {
+    if (days[slot.dayIndex][slot.mealType]) return
+    const queue = queueByType[slot.mealType] || []
+    const nextQueue = queue.find((id) => !used.has(id))
+    if (nextQueue) {
+      const meal = meals.find((m) => m.id === nextQueue)
+      if (meal) {
+        placeMeal(days, slot, meal)
+        used.add(meal.id)
+        queue.splice(queue.indexOf(nextQueue), 1)
+        return
+      }
+    }
+
+    let candidates = meals.filter((meal) => !used.has(meal.id))
+    if (config.tagConstraints?.length) {
+      const unmet = config.tagConstraints.find(
+        (constraint) =>
+          (!constraint.mealType || constraint.mealType === slot.mealType) &&
+          constraintNeeds(constraint, days, slot.mealType) > 0
+      )
+      if (unmet) {
+        const tagged = candidates.filter((meal) => meetsConstraint(meal, unmet))
+        if (tagged.length) {
+          candidates = tagged
+        } else {
+          const taggedAll = meals.filter((meal) => meetsConstraint(meal, unmet))
+          if (taggedAll.length) {
+            candidates = taggedAll
+          } else {
+            placePlaceholder(days, slot, 'No other meal found')
+            return
+          }
+        }
+      }
+    }
+
+    const meal = pickMealByScore(candidates, menuHistory)
+    if (meal) {
+      placeMeal(days, slot, meal)
+      used.add(meal.id)
+    }
+  }
+
   if (config.mealPrepMode) {
     const lunchUniqueLimit = Math.max(0, Number(config.lunchUnique ?? lunchCount))
     const dinnerUniqueLimit = Math.max(0, Number(config.dinnerUnique ?? dinnerCount))
@@ -140,6 +205,10 @@ export function generateMenu({
     const buildUniquePool = (mealType, limit) => {
       const pool = []
       const ids = new Set()
+      const constraints = relevantConstraints(mealType)
+      const allowedMeals = constraints.length
+        ? meals.filter((meal) => constraints.some((constraint) => meetsConstraint(meal, constraint)))
+        : meals
 
       const pushUnique = (meal) => {
         if (!meal || ids.has(meal.id)) return
@@ -156,7 +225,7 @@ export function generateMenu({
         : config.queueMeals?.[mealType] || []
       queueIds.forEach((id) => pushUnique(meals.find((m) => m.id === id)))
 
-      const remaining = meals.filter((meal) => !ids.has(meal.id))
+      const remaining = allowedMeals.filter((meal) => !ids.has(meal.id))
       while (pool.length < limit && remaining.length) {
         const candidate = pickMealByScore(remaining, menuHistory)
         if (!candidate) break
@@ -167,57 +236,53 @@ export function generateMenu({
       return pool
     }
 
-    const lunchPool = lunchCount ? buildUniquePool('lunch', lunchUniqueLimit) : []
-    const dinnerPool = dinnerCount ? buildUniquePool('dinner', dinnerUniqueLimit) : []
+    const lunchPool = prepByType.lunch && lunchCount ? buildUniquePool('lunch', lunchUniqueLimit) : []
+    const dinnerPool = prepByType.dinner && dinnerCount ? buildUniquePool('dinner', dinnerUniqueLimit) : []
     const cursors = { lunch: 0, dinner: 0 }
 
     slots.forEach((slot) => {
-      const pool = slot.mealType === 'lunch' ? lunchPool : dinnerPool
-      if (!pool.length) return
-      const current = days[slot.dayIndex][slot.mealType]
-      const meal = pool[cursors[slot.mealType] % pool.length]
-      if (!current) {
-        placeMeal(days, slot, meal)
-      }
-      cursors[slot.mealType] += 1
-    })
-  } else {
-    const queueByType = {
-      lunch: Array.isArray(config.queueMeals) ? config.queueMeals : [...(config.queueMeals?.lunch || [])],
-      dinner: Array.isArray(config.queueMeals) ? config.queueMeals : [...(config.queueMeals?.dinner || [])]
-    }
-    slots.forEach((slot) => {
       if (days[slot.dayIndex][slot.mealType]) return
-      const queue = queueByType[slot.mealType] || []
-      const nextQueue = queue.find((id) => !used.has(id))
-      if (nextQueue) {
-        const meal = meals.find((m) => m.id === nextQueue)
-        if (meal) {
-          placeMeal(days, slot, meal)
-          used.add(meal.id)
-          queue.splice(queue.indexOf(nextQueue), 1)
+      if (prepByType[slot.mealType]) {
+        const pool = slot.mealType === 'lunch' ? lunchPool : dinnerPool
+        if (!pool.length) {
+          if (relevantConstraints(slot.mealType).length) {
+            placePlaceholder(days, slot, 'No other meal found')
+          }
           return
         }
-      }
-
-      let candidates = meals.filter((meal) => !used.has(meal.id))
-      if (config.tagConstraints?.length) {
-        const unmet = config.tagConstraints.find(
-          (constraint) =>
-            (!constraint.mealType || constraint.mealType === slot.mealType) &&
-            constraintNeeds(constraint, days, slot.mealType) > 0
-        )
-        if (unmet) {
-          const tagged = candidates.filter((meal) => meetsConstraint(meal, unmet))
-          if (tagged.length) candidates = tagged
+        let meal = pool[cursors[slot.mealType] % pool.length]
+        if (config.tagConstraints?.length) {
+          const unmet = config.tagConstraints.find(
+            (constraint) =>
+              (!constraint.mealType || constraint.mealType === slot.mealType) &&
+              constraintNeeds(constraint, days, slot.mealType) > 0
+          )
+          if (unmet) {
+            const taggedInPool = pool.filter((candidate) => meetsConstraint(candidate, unmet))
+            if (taggedInPool.length) {
+              meal = taggedInPool[cursors[slot.mealType] % taggedInPool.length]
+            } else {
+              const taggedAll = meals.filter((candidate) => meetsConstraint(candidate, unmet))
+              if (taggedAll.length) {
+                meal = pickMealByScore(taggedAll, menuHistory)
+              } else {
+                placePlaceholder(days, slot, 'No other meal found')
+                cursors[slot.mealType] += 1
+                return
+              }
+            }
+          }
         }
+        if (meal) placeMeal(days, slot, meal)
+        cursors[slot.mealType] += 1
+        return
       }
-
-      const meal = pickMealByScore(candidates, menuHistory)
-      if (meal) {
-        placeMeal(days, slot, meal)
-        used.add(meal.id)
-      }
+      fillNonPrepSlot(slot)
+    })
+  } else {
+    slots.forEach((slot) => {
+      if (prepByType[slot.mealType]) return
+      fillNonPrepSlot(slot)
     })
   }
 
@@ -269,7 +334,12 @@ export function regenerateSlot({
     )
     if (unmet) {
       const tagged = candidates.filter((meal) => meetsConstraint(meal, unmet))
-      if (tagged.length) candidates = tagged
+      if (tagged.length) {
+        candidates = tagged
+      } else {
+        const taggedAll = meals.filter((meal) => meetsConstraint(meal, unmet))
+        if (taggedAll.length) candidates = taggedAll
+      }
     }
   }
 
