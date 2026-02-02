@@ -176,7 +176,7 @@
               <p class="text-xs font-semibold text-slate-600">Lunch constraints</p>
               <div class="flex flex-wrap gap-2">
                 <button
-                  v-for="tag in store.allTags"
+                  v-for="tag in availableConstraintTagsLunch"
                   :key="`lunch-${tag}`"
                   class="pill"
                   :class="selectedConstraintTagsLunch.includes(tag) ? 'pill-selected' : ''"
@@ -186,25 +186,52 @@
                 </button>
                 <p v-if="!store.allTags.length" class="text-xs text-slate-500">No tags yet. Add tags in Meals.</p>
               </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <input v-model.number="constraintCountLunch" type="number" min="1" class="input" placeholder="Count" />
-                <button
-                  class="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
-                  :disabled="!canAddConstraint('lunch')"
-                  @click="addConstraint('lunch')"
-                >
-                  Add
-                </button>
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <div class="flex-1">
+                    <input
+                      v-model.number="constraintCountLunch"
+                      type="number"
+                      min="1"
+                      :max="remainingConstraintCount('lunch')"
+                      class="input disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="Count"
+                      :disabled="!canAddConstraint('lunch')"
+                    />
+                    <p v-if="constraintCountLunch > remainingConstraintCount('lunch')" class="mt-1 text-xs text-rose-600">
+                      Count exceeds remaining constraints.
+                    </p>
+                  </div>
+                  <button
+                    class="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="!canAddConstraint('lunch')"
+                    @click="addConstraint('lunch')"
+                  >
+                    Add
+                  </button>
+                </div>
+                <p v-if="remainingConstraintCount('lunch') > 0" class="text-xs text-slate-500">
+                  {{ remainingConstraintCount('lunch') }} meal constraints left.
+                </p>
+                <p v-else class="text-xs text-slate-500">Max constraints reached for lunch.</p>
               </div>
-              <p v-if="!canAddConstraint('lunch')" class="text-xs text-slate-500">
-                Max constraints reached for lunch.
-              </p>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  v-for="(constraint, index) in tagConstraints.filter((c) => c.mealType === 'lunch')"
+                  :key="`lunch-${index}`"
+                  class="pill"
+                >
+                  {{ constraint.count }} with {{ constraint.tags.join(', ') }}
+                  <button class="text-red-500" @click="tagConstraints.splice(tagConstraints.indexOf(constraint), 1)">×</button>
+                </span>
+                <p v-if="!tagConstraints.some((c) => c.mealType === 'lunch')" class="text-xs text-slate-500">No lunch constraints.</p>
+              </div>
             </div>
             <div class="space-y-2">
               <p class="text-xs font-semibold text-slate-600">Dinner constraints</p>
               <div class="flex flex-wrap gap-2">
                 <button
-                  v-for="tag in store.allTags"
+                  v-for="tag in availableConstraintTagsDinner"
                   :key="`dinner-${tag}`"
                   class="pill"
                   :class="selectedConstraintTagsDinner.includes(tag) ? 'pill-selected' : ''"
@@ -214,26 +241,47 @@
                 </button>
                 <p v-if="!store.allTags.length" class="text-xs text-slate-500">No tags yet. Add tags in Meals.</p>
               </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <input v-model.number="constraintCountDinner" type="number" min="1" class="input" placeholder="Count" />
-                <button
-                  class="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
-                  :disabled="!canAddConstraint('dinner')"
-                  @click="addConstraint('dinner')"
-                >
-                  Add
-                </button>
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <div class="flex-1">
+                    <input
+                      v-model.number="constraintCountDinner"
+                      type="number"
+                      min="1"
+                      :max="remainingConstraintCount('dinner')"
+                      class="input disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="Count"
+                      :disabled="!canAddConstraint('dinner')"
+                    />
+                    <p v-if="constraintCountDinner > remainingConstraintCount('dinner')" class="mt-1 text-xs text-rose-600">
+                      Count exceeds remaining constraints.
+                    </p>
+                  </div>
+                  <button
+                    class="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="!canAddConstraint('dinner')"
+                    @click="addConstraint('dinner')"
+                  >
+                    Add
+                  </button>
+                </div>
+                <p v-if="remainingConstraintCount('dinner') > 0" class="text-xs text-slate-500">
+                  {{ remainingConstraintCount('dinner') }} meal constraints left.
+                </p>
+                <p v-else class="text-xs text-slate-500">Max constraints reached for dinner.</p>
               </div>
-              <p v-if="!canAddConstraint('dinner')" class="text-xs text-slate-500">
-                Max constraints reached for dinner.
-              </p>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  v-for="(constraint, index) in tagConstraints.filter((c) => c.mealType === 'dinner')"
+                  :key="`dinner-${index}`"
+                  class="pill"
+                >
+                  {{ constraint.count }} with {{ constraint.tags.join(', ') }}
+                  <button class="text-red-500" @click="tagConstraints.splice(tagConstraints.indexOf(constraint), 1)">×</button>
+                </span>
+                <p v-if="!tagConstraints.some((c) => c.mealType === 'dinner')" class="text-xs text-slate-500">No dinner constraints.</p>
+              </div>
             </div>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="(constraint, index) in tagConstraints" :key="index" class="pill">
-              {{ constraint.mealType }}: {{ constraint.count }} with {{ constraint.tags.join(', ') }}
-              <button class="text-red-500" @click="tagConstraints.splice(index,1)">×</button>
-            </span>
           </div>
         </div>
 
@@ -485,6 +533,12 @@ const applyConfig = (config) => {
   presetIncludePinned.value = config.presetIncludePinned ?? true
   presetIncludeQueue.value = config.presetIncludeQueue ?? true
   configOpen.value = config.configOpen ?? false
+  if (config.queueMeals) {
+    store.generationQueue = {
+      lunch: [...(config.queueMeals.lunch || [])],
+      dinner: [...(config.queueMeals.dinner || [])]
+    }
+  }
 }
 
 const captureConfig = () => ({
@@ -502,7 +556,8 @@ const captureConfig = () => ({
   pinnedMeals: [...pinnedMeals.value],
   presetIncludePinned: presetIncludePinned.value,
   presetIncludeQueue: presetIncludeQueue.value,
-  configOpen: configOpen.value
+  configOpen: configOpen.value,
+  queueMeals: { ...store.generationQueue }
 })
 
 const mealTypeOptions = computed(() => {
@@ -517,7 +572,9 @@ const totalSlots = computed(() => lunchCount.value + dinnerCount.value)
 const totalDays = computed(() => Math.max(lunchCount.value, dinnerCount.value, 1))
 
 const constraintCountByType = (mealType) =>
-  tagConstraints.value.filter((constraint) => constraint.mealType === mealType).length
+  tagConstraints.value
+    .filter((constraint) => constraint.mealType === mealType)
+    .reduce((total, constraint) => total + Number(constraint.count || 0), 0)
 
 const constraintLimit = (mealType) => {
   if (mealType === 'lunch') {
@@ -526,14 +583,50 @@ const constraintLimit = (mealType) => {
   return mealPrepDinner.value ? dinnerUnique.value : dinnerCount.value
 }
 
-const canAddConstraint = (mealType) =>
-  constraintCountByType(mealType) < Math.max(0, constraintLimit(mealType))
+const remainingConstraintCount = (mealType) => {
+  const remaining = constraintLimit(mealType) - constraintCountByType(mealType)
+  return Math.max(0, remaining)
+}
+
+const remainingLunch = computed(() => remainingConstraintCount('lunch'))
+const remainingDinner = computed(() => remainingConstraintCount('dinner'))
+
+const canAddConstraint = (mealType) => {
+  const remaining = mealType === 'lunch' ? remainingLunch.value : remainingDinner.value
+  const inputValue = mealType === 'lunch' ? constraintCountLunch.value : constraintCountDinner.value
+  return remaining > 0 && Number(inputValue || 0) > 0 && Number(inputValue) <= remaining
+}
+
+watch([remainingLunch, remainingDinner], ([nextLunch, nextDinner]) => {
+  if (nextLunch <= 0) {
+    constraintCountLunch.value = 0
+  } else if (!constraintCountLunch.value) {
+    constraintCountLunch.value = 1
+  }
+  if (nextDinner <= 0) {
+    constraintCountDinner.value = 0
+  } else if (!constraintCountDinner.value) {
+    constraintCountDinner.value = 1
+  }
+})
 
 const queueTooLongLunch = computed(
   () => lunchCount.value > 0 && store.generationQueue.lunch.length > lunchCount.value
 )
 const queueTooLongDinner = computed(
   () => dinnerCount.value > 0 && store.generationQueue.dinner.length > dinnerCount.value
+)
+
+const constraintTagsByType = computed(() => ({
+  lunch: new Set(tagConstraints.value.filter((c) => c.mealType === 'lunch').flatMap((c) => c.tags)),
+  dinner: new Set(tagConstraints.value.filter((c) => c.mealType === 'dinner').flatMap((c) => c.tags))
+}))
+
+const availableConstraintTagsLunch = computed(() =>
+  store.allTags.filter((tag) => !constraintTagsByType.value.lunch.has(tag))
+)
+const availableConstraintTagsDinner = computed(() =>
+  store.allTags.filter((tag) => !constraintTagsByType.value.dinner.has(tag))
 )
 
 const draftShowLunch = computed(() => (store.draftMenu?.lunchCount ?? lunchCount.value) > 0)
@@ -743,6 +836,7 @@ watch([lunchCount, dinnerCount], () => {
   if (lunchUnique.value > lunchCount.value && lunchCount.value > 0) lunchUnique.value = lunchCount.value
   if (dinnerUnique.value > dinnerCount.value && dinnerCount.value > 0) dinnerUnique.value = dinnerCount.value
 })
+
 
 watch(
   () => store.defaults,

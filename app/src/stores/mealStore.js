@@ -145,7 +145,6 @@ export const useMealStore = defineStore('meals', {
         }
       })
       this.draftMenu = menu
-      this.clearQueue()
       await this.persist()
       return menu
     },
