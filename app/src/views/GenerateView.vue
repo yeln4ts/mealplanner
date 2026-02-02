@@ -186,10 +186,19 @@
                 </button>
                 <p v-if="!store.allTags.length" class="text-xs text-slate-500">No tags yet. Add tags in Meals.</p>
               </div>
-              <div class="flex flex-wrap gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <input v-model.number="constraintCountLunch" type="number" min="1" class="input" placeholder="Count" />
-                <button class="btn-secondary" @click="addConstraint('lunch')">Add</button>
+                <button
+                  class="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="!canAddConstraint('lunch')"
+                  @click="addConstraint('lunch')"
+                >
+                  Add
+                </button>
               </div>
+              <p v-if="!canAddConstraint('lunch')" class="text-xs text-slate-500">
+                Max constraints reached for lunch.
+              </p>
             </div>
             <div class="space-y-2">
               <p class="text-xs font-semibold text-slate-600">Dinner constraints</p>
@@ -205,10 +214,19 @@
                 </button>
                 <p v-if="!store.allTags.length" class="text-xs text-slate-500">No tags yet. Add tags in Meals.</p>
               </div>
-              <div class="flex flex-wrap gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <input v-model.number="constraintCountDinner" type="number" min="1" class="input" placeholder="Count" />
-                <button class="btn-secondary" @click="addConstraint('dinner')">Add</button>
+                <button
+                  class="btn-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="!canAddConstraint('dinner')"
+                  @click="addConstraint('dinner')"
+                >
+                  Add
+                </button>
               </div>
+              <p v-if="!canAddConstraint('dinner')" class="text-xs text-slate-500">
+                Max constraints reached for dinner.
+              </p>
             </div>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -497,6 +515,19 @@ const mealTypeOptions = computed(() => {
 const totalSlots = computed(() => lunchCount.value + dinnerCount.value)
 
 const totalDays = computed(() => Math.max(lunchCount.value, dinnerCount.value, 1))
+
+const constraintCountByType = (mealType) =>
+  tagConstraints.value.filter((constraint) => constraint.mealType === mealType).length
+
+const constraintLimit = (mealType) => {
+  if (mealType === 'lunch') {
+    return mealPrepLunch.value ? lunchUnique.value : lunchCount.value
+  }
+  return mealPrepDinner.value ? dinnerUnique.value : dinnerCount.value
+}
+
+const canAddConstraint = (mealType) =>
+  constraintCountByType(mealType) < Math.max(0, constraintLimit(mealType))
 
 const queueTooLongLunch = computed(
   () => lunchCount.value > 0 && store.generationQueue.lunch.length > lunchCount.value
