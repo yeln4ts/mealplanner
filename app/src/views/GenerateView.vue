@@ -835,6 +835,7 @@ watch(queueSearchDinner, () => {
 const addToQueue = (mealId, mealType) => {
   if (!mealId) return
   store.addToQueue(mealId, mealType)
+  queueDropdown.value[mealType] = false
 }
 
 const toggleQueueDropdown = (mealType) => {
@@ -894,6 +895,8 @@ const replaceDraft = (dayIndex, mealType, mealId) => {
   const meal = store.meals.find((item) => item.id === mealId)
   if (!meal) return
   store.updateDraftSlot(dayIndex, mealType, meal)
+  const key = getReplaceKey(dayIndex, mealType)
+  replaceDropdown.value = { ...replaceDropdown.value, [key]: false }
 }
 
 const getReplaceKey = (dayIndex, mealType) => `${dayIndex}:${mealType}`
@@ -922,6 +925,7 @@ const scrollActiveIntoView = async (event, index) => {
 }
 
 const onQueueKeydown = (event, mealType) => {
+  if (event.target.closest?.('[data-queue-sheet]')) return
   const list = mealType === 'lunch' ? queueOptionsLunch.value : queueOptionsDinner.value
   if (!list.length) return
   const current = queueActiveIndex.value[mealType] ?? 0
@@ -941,6 +945,7 @@ const onQueueKeydown = (event, mealType) => {
 }
 
 const onReplaceKeydown = (event, dayIndex, mealType) => {
+  if (event.target.closest?.('[data-replace-sheet]')) return
   const list = replaceOptions(dayIndex, mealType)
   if (!list.length) return
   const key = getReplaceKey(dayIndex, mealType)
@@ -1078,16 +1083,25 @@ const handleClickOutside = (event) => {
   replaceDropdown.value = {}
 }
 
+const handleEscape = (event) => {
+  if (event.key !== 'Escape') return
+  queueDropdown.value.lunch = false
+  queueDropdown.value.dinner = false
+  replaceDropdown.value = {}
+}
+
 onMounted(() => {
   if (store.generationConfig) {
     applyConfig(store.generationConfig)
     configInitialized.value = true
   }
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleEscape)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleEscape)
   store.generationConfig = captureConfig()
 })
 
