@@ -350,7 +350,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useMealStore } from '../stores/mealStore'
 import { findSimilarMeals } from '../composables/useFuzzyMatch'
 import DuplicateReviewModal from '../components/modals/DuplicateReviewModal.vue'
@@ -394,6 +394,16 @@ const filteredMeals = computed(() => {
     return matchesQuery && matchesTags
   })
 })
+
+watch(
+  [filteredMeals, selectionMode],
+  ([meals, isSelecting]) => {
+    if (!isSelecting) return
+    const allowed = new Set(meals.map((meal) => meal.id))
+    selectedIds.value = selectedIds.value.filter((id) => allowed.has(id))
+  },
+  { immediate: true }
+)
 const mealCountLabel = computed(() => {
   const count = filteredMeals.value.length
   return `${count} ${count === 1 ? 'Meal' : 'Meals'}`
@@ -543,6 +553,12 @@ const removeBulkTag = async (tag) => {
   for (const meal of selectedMeals) {
     meal.tags = meal.tags.filter((t) => t !== tag)
     await store.updateMeal(meal)
+  }
+  if (selectedTags.value.includes(tag)) {
+    const anyRemaining = store.meals.some((meal) => meal.tags?.includes(tag))
+    if (!anyRemaining) {
+      selectedTags.value = selectedTags.value.filter((t) => t !== tag)
+    }
   }
 }
 
