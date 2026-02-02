@@ -116,13 +116,52 @@
                 <button class="btn-secondary w-full" @click="toggleQueueDropdown('lunch')">
                   Add lunch meal
                 </button>
-                <div v-if="queueDropdown.lunch" class="absolute z-10 mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
-                  <input v-model="queueSearchLunch" class="input" placeholder="Filter meals" />
-                  <div class="mt-2 max-h-40 overflow-y-auto space-y-1">
+                <div v-if="queueDropdown.lunch" class="absolute z-10 mt-2 hidden w-full rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:block" data-list-container>
+                  <input
+                    v-model="queueSearchLunch"
+                    class="input"
+                    placeholder="Filter meals"
+                    autofocus
+                    @keydown="onQueueKeydown($event, 'lunch')"
+                  />
+                  <div class="mt-2 max-h-40 overflow-y-auto space-y-1" data-list-scroll>
                     <button
-                      v-for="meal in queueOptionsLunch"
+                      v-for="(meal, index) in queueOptionsLunch"
                       :key="meal.id"
                       class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                      :class="queueActiveIndex.lunch === index ? 'bg-slate-100' : ''"
+                      :data-index="index"
+                      @click="addToQueue(meal.id, 'lunch')"
+                    >
+                      {{ meal.name }}
+                    </button>
+                    <p v-if="queueSearchLunch && !queueOptionsLunch.length" class="text-xs text-slate-500">No matches.</p>
+                  </div>
+                </div>
+              </div>
+              <div v-if="queueDropdown.lunch" class="fixed inset-0 z-50 sm:hidden" data-queue-sheet data-list-container>
+                <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+                <div class="absolute bottom-0 left-0 right-0 max-h-[70vh] rounded-t-2xl bg-white p-4 shadow-2xl">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-slate-900">Add lunch meal</h3>
+                    <button class="text-sm text-slate-500" @click="toggleQueueDropdown('lunch')">Done</button>
+                  </div>
+                  <div class="mt-3">
+                    <input
+                      v-model="queueSearchLunch"
+                      class="input"
+                      placeholder="Filter meals"
+                      autofocus
+                      @keydown="onQueueKeydown($event, 'lunch')"
+                    />
+                  </div>
+                  <div class="mt-3 max-h-48 overflow-y-auto space-y-1" data-list-scroll>
+                    <button
+                      v-for="(meal, index) in queueOptionsLunch"
+                      :key="meal.id"
+                      class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                      :class="queueActiveIndex.lunch === index ? 'bg-slate-100' : ''"
+                      :data-index="index"
                       @click="addToQueue(meal.id, 'lunch')"
                     >
                       {{ meal.name }}
@@ -148,13 +187,52 @@
                 <button class="btn-secondary w-full" @click="toggleQueueDropdown('dinner')">
                   Add dinner meal
                 </button>
-                <div v-if="queueDropdown.dinner" class="absolute z-10 mt-2 w-full rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
-                  <input v-model="queueSearchDinner" class="input" placeholder="Filter meals" />
-                  <div class="mt-2 max-h-40 overflow-y-auto space-y-1">
+                <div v-if="queueDropdown.dinner" class="absolute z-10 mt-2 hidden w-full rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:block" data-list-container>
+                  <input
+                    v-model="queueSearchDinner"
+                    class="input"
+                    placeholder="Filter meals"
+                    autofocus
+                    @keydown="onQueueKeydown($event, 'dinner')"
+                  />
+                  <div class="mt-2 max-h-40 overflow-y-auto space-y-1" data-list-scroll>
                     <button
-                      v-for="meal in queueOptionsDinner"
+                      v-for="(meal, index) in queueOptionsDinner"
                       :key="meal.id"
                       class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                      :class="queueActiveIndex.dinner === index ? 'bg-slate-100' : ''"
+                      :data-index="index"
+                      @click="addToQueue(meal.id, 'dinner')"
+                    >
+                      {{ meal.name }}
+                    </button>
+                    <p v-if="queueSearchDinner && !queueOptionsDinner.length" class="text-xs text-slate-500">No matches.</p>
+                  </div>
+                </div>
+              </div>
+              <div v-if="queueDropdown.dinner" class="fixed inset-0 z-50 sm:hidden" data-queue-sheet data-list-container>
+                <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+                <div class="absolute bottom-0 left-0 right-0 max-h-[70vh] rounded-t-2xl bg-white p-4 shadow-2xl">
+                  <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-slate-900">Add dinner meal</h3>
+                    <button class="text-sm text-slate-500" @click="toggleQueueDropdown('dinner')">Done</button>
+                  </div>
+                  <div class="mt-3">
+                    <input
+                      v-model="queueSearchDinner"
+                      class="input"
+                      placeholder="Filter meals"
+                      autofocus
+                      @keydown="onQueueKeydown($event, 'dinner')"
+                    />
+                  </div>
+                  <div class="mt-3 max-h-48 overflow-y-auto space-y-1" data-list-scroll>
+                    <button
+                      v-for="(meal, index) in queueOptionsDinner"
+                      :key="meal.id"
+                      class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                      :class="queueActiveIndex.dinner === index ? 'bg-slate-100' : ''"
+                      :data-index="index"
                       @click="addToQueue(meal.id, 'dinner')"
                     >
                       {{ meal.name }}
@@ -392,24 +470,59 @@
                   </button>
                   <div
                     v-if="replaceDropdown[getReplaceKey(day.dayIndex, 'lunch')]"
-                    class="absolute right-0 z-10 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+                    class="absolute right-0 z-10 mt-2 hidden w-[22rem] max-w-[90vw] rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:block"
                     data-replace-dropdown
+                    data-list-container
                     @click.stop
                   >
                     <input
                       v-model="replaceSearch[getReplaceKey(day.dayIndex, 'lunch')]"
                       class="input"
-                      placeholder="Search meals"
+                      placeholder="Filter meals"
+                      autofocus
+                      @keydown="onReplaceKeydown($event, day.dayIndex, 'lunch')"
                     />
-                    <div class="mt-2 max-h-40 overflow-y-auto space-y-1">
+                    <div class="mt-2 max-h-40 overflow-y-auto space-y-1" data-list-scroll>
                       <button
                         v-for="meal in replaceOptions(day.dayIndex, 'lunch')"
                         :key="meal.id"
                         class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                        :class="isReplaceActive(day.dayIndex, 'lunch', meal) ? 'bg-slate-100' : ''"
+                        :data-index="replaceOptions(day.dayIndex, 'lunch').findIndex((item) => item.id === meal.id)"
                         @click="replaceDraft(day.dayIndex, 'lunch', meal.id)"
                       >
                         {{ meal.name }}
                       </button>
+                    </div>
+                  </div>
+                  <div v-if="replaceDropdown[getReplaceKey(day.dayIndex, 'lunch')]" class="fixed inset-0 z-50 sm:hidden" data-replace-sheet data-list-container>
+                    <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+                    <div class="absolute bottom-0 left-0 right-0 max-h-[70vh] rounded-t-2xl bg-white p-4 shadow-2xl">
+                      <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-slate-900">Replace lunch meal</h3>
+                        <button class="text-sm text-slate-500" @click="toggleReplaceDropdown(day.dayIndex, 'lunch')">Done</button>
+                      </div>
+                      <div class="mt-3">
+                        <input
+                          v-model="replaceSearch[getReplaceKey(day.dayIndex, 'lunch')]"
+                          class="input"
+                          placeholder="Filter meals"
+                          autofocus
+                          @keydown="onReplaceKeydown($event, day.dayIndex, 'lunch')"
+                        />
+                      </div>
+                      <div class="mt-3 max-h-48 overflow-y-auto space-y-1" data-list-scroll>
+                        <button
+                          v-for="meal in replaceOptions(day.dayIndex, 'lunch')"
+                          :key="meal.id"
+                          class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                          :class="isReplaceActive(day.dayIndex, 'lunch', meal) ? 'bg-slate-100' : ''"
+                          :data-index="replaceOptions(day.dayIndex, 'lunch').findIndex((item) => item.id === meal.id)"
+                          @click="replaceDraft(day.dayIndex, 'lunch', meal.id)"
+                        >
+                          {{ meal.name }}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -445,24 +558,59 @@
                   </button>
                   <div
                     v-if="replaceDropdown[getReplaceKey(day.dayIndex, 'dinner')]"
-                    class="absolute right-0 z-10 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg"
+                    class="absolute right-0 z-10 mt-2 hidden w-[22rem] max-w-[90vw] rounded-xl border border-slate-200 bg-white p-3 shadow-lg sm:block"
                     data-replace-dropdown
+                    data-list-container
                     @click.stop
                   >
                     <input
                       v-model="replaceSearch[getReplaceKey(day.dayIndex, 'dinner')]"
                       class="input"
-                      placeholder="Search meals"
+                      placeholder="Filter meals"
+                      autofocus
+                      @keydown="onReplaceKeydown($event, day.dayIndex, 'dinner')"
                     />
-                    <div class="mt-2 max-h-40 overflow-y-auto space-y-1">
+                    <div class="mt-2 max-h-40 overflow-y-auto space-y-1" data-list-scroll>
                       <button
                         v-for="meal in replaceOptions(day.dayIndex, 'dinner')"
                         :key="meal.id"
                         class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                        :class="isReplaceActive(day.dayIndex, 'dinner', meal) ? 'bg-slate-100' : ''"
+                        :data-index="replaceOptions(day.dayIndex, 'dinner').findIndex((item) => item.id === meal.id)"
                         @click="replaceDraft(day.dayIndex, 'dinner', meal.id)"
                       >
                         {{ meal.name }}
                       </button>
+                    </div>
+                  </div>
+                  <div v-if="replaceDropdown[getReplaceKey(day.dayIndex, 'dinner')]" class="fixed inset-0 z-50 sm:hidden" data-replace-sheet data-list-container>
+                    <div class="absolute inset-0 bg-black/40" aria-hidden="true"></div>
+                    <div class="absolute bottom-0 left-0 right-0 max-h-[70vh] rounded-t-2xl bg-white p-4 shadow-2xl">
+                      <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-slate-900">Replace dinner meal</h3>
+                        <button class="text-sm text-slate-500" @click="toggleReplaceDropdown(day.dayIndex, 'dinner')">Done</button>
+                      </div>
+                      <div class="mt-3">
+                        <input
+                          v-model="replaceSearch[getReplaceKey(day.dayIndex, 'dinner')]"
+                          class="input"
+                          placeholder="Filter meals"
+                          autofocus
+                          @keydown="onReplaceKeydown($event, day.dayIndex, 'dinner')"
+                        />
+                      </div>
+                      <div class="mt-3 max-h-48 overflow-y-auto space-y-1" data-list-scroll>
+                        <button
+                          v-for="meal in replaceOptions(day.dayIndex, 'dinner')"
+                          :key="meal.id"
+                          class="w-full rounded-lg px-2 py-1 text-left text-sm hover:bg-slate-100"
+                          :class="isReplaceActive(day.dayIndex, 'dinner', meal) ? 'bg-slate-100' : ''"
+                          :data-index="replaceOptions(day.dayIndex, 'dinner').findIndex((item) => item.id === meal.id)"
+                          @click="replaceDraft(day.dayIndex, 'dinner', meal.id)"
+                        >
+                          {{ meal.name }}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -479,7 +627,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useMealStore } from '../stores/mealStore'
 const store = useMealStore()
 
@@ -507,9 +655,11 @@ const lunchDropdownRef = ref(null)
 const dinnerDropdownRef = ref(null)
 const replaceDropdown = ref({})
 const replaceSearch = ref({})
+const replaceActiveIndex = ref({})
 const moveMode = ref(false)
 const moveSource = ref(null)
 const queueDropdown = ref({ lunch: false, dinner: false })
+const queueActiveIndex = ref({ lunch: 0, dinner: 0 })
 const configInitialized = ref(false)
 
 const applyConfig = (config) => {
@@ -665,15 +815,21 @@ const dinnerQueueMeals = computed(() => store.queuedMeals('dinner'))
 const queueOptionsLunch = computed(() => {
   const query = queueSearchLunch.value.trim().toLowerCase()
   const base = store.meals.filter((meal) => !store.generationQueue.lunch.includes(meal.id))
-  if (!query) return base.slice(0, 8)
-  return base.filter((meal) => meal.name.toLowerCase().includes(query)).slice(0, 12)
+  if (!query) return base
+  return base.filter((meal) => meal.name.toLowerCase().includes(query))
+})
+watch(queueSearchLunch, () => {
+  queueActiveIndex.value.lunch = 0
 })
 
 const queueOptionsDinner = computed(() => {
   const query = queueSearchDinner.value.trim().toLowerCase()
   const base = store.meals.filter((meal) => !store.generationQueue.dinner.includes(meal.id))
-  if (!query) return base.slice(0, 8)
-  return base.filter((meal) => meal.name.toLowerCase().includes(query)).slice(0, 12)
+  if (!query) return base
+  return base.filter((meal) => meal.name.toLowerCase().includes(query))
+})
+watch(queueSearchDinner, () => {
+  queueActiveIndex.value.dinner = 0
 })
 
 const addToQueue = (mealId, mealType) => {
@@ -683,6 +839,7 @@ const addToQueue = (mealId, mealType) => {
 
 const toggleQueueDropdown = (mealType) => {
   queueDropdown.value[mealType] = !queueDropdown.value[mealType]
+  queueActiveIndex.value[mealType] = 0
 }
 
 const clearAllQueues = () => {
@@ -744,13 +901,72 @@ const getReplaceKey = (dayIndex, mealType) => `${dayIndex}:${mealType}`
 const toggleReplaceDropdown = (dayIndex, mealType) => {
   const key = getReplaceKey(dayIndex, mealType)
   replaceDropdown.value = { ...replaceDropdown.value, [key]: !replaceDropdown.value[key] }
+  replaceActiveIndex.value = { ...replaceActiveIndex.value, [key]: 0 }
 }
 
 const replaceOptions = (dayIndex, mealType) => {
   const key = getReplaceKey(dayIndex, mealType)
   const query = (replaceSearch.value[key] || '').trim().toLowerCase()
-  if (!query) return store.meals.slice(0, 8)
-  return store.meals.filter((meal) => meal.name.toLowerCase().includes(query)).slice(0, 12)
+  if (!query) return store.meals
+  return store.meals.filter((meal) => meal.name.toLowerCase().includes(query))
+}
+
+const scrollActiveIntoView = async (event, index) => {
+  await nextTick()
+  const root = event.target?.closest?.('[data-list-container]') || event.target?.parentElement
+  const scrollBox = root?.querySelector?.('[data-list-scroll]')
+  const item = scrollBox?.querySelector?.(`[data-index="${index}"]`)
+  if (item && scrollBox) {
+    item.scrollIntoView({ block: 'nearest' })
+  }
+}
+
+const onQueueKeydown = (event, mealType) => {
+  const list = mealType === 'lunch' ? queueOptionsLunch.value : queueOptionsDinner.value
+  if (!list.length) return
+  const current = queueActiveIndex.value[mealType] ?? 0
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    queueActiveIndex.value[mealType] = Math.min(current + 1, list.length - 1)
+    scrollActiveIntoView(event, queueActiveIndex.value[mealType])
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    queueActiveIndex.value[mealType] = Math.max(current - 1, 0)
+    scrollActiveIntoView(event, queueActiveIndex.value[mealType])
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    const meal = list[current]
+    if (meal) addToQueue(meal.id, mealType)
+  }
+}
+
+const onReplaceKeydown = (event, dayIndex, mealType) => {
+  const list = replaceOptions(dayIndex, mealType)
+  if (!list.length) return
+  const key = getReplaceKey(dayIndex, mealType)
+  const current = replaceActiveIndex.value[key] ?? 0
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    const nextIndex = Math.min(current + 1, list.length - 1)
+    replaceActiveIndex.value = { ...replaceActiveIndex.value, [key]: nextIndex }
+    scrollActiveIntoView(event, nextIndex)
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    const nextIndex = Math.max(current - 1, 0)
+    replaceActiveIndex.value = { ...replaceActiveIndex.value, [key]: nextIndex }
+    scrollActiveIntoView(event, nextIndex)
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    const meal = list[current]
+    if (meal) replaceDraft(dayIndex, mealType, meal.id)
+  }
+}
+
+const isReplaceActive = (dayIndex, mealType, meal) => {
+  const key = getReplaceKey(dayIndex, mealType)
+  const list = replaceOptions(dayIndex, mealType)
+  const current = replaceActiveIndex.value[key] ?? 0
+  return list[current]?.id === meal.id
 }
 
 const toggleMoveMode = () => {
@@ -854,6 +1070,8 @@ const handleClickOutside = (event) => {
   const dinnerEl = dinnerDropdownRef.value
   if (lunchEl && lunchEl.contains(event.target)) return
   if (dinnerEl && dinnerEl.contains(event.target)) return
+  if (event.target.closest?.('[data-queue-sheet]')) return
+  if (event.target.closest?.('[data-replace-sheet]')) return
   if (event.target.closest('[data-replace-dropdown]')) return
   queueDropdown.value.lunch = false
   queueDropdown.value.dinner = false
