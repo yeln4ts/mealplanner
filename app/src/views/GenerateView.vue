@@ -303,7 +303,15 @@
               @click="onMoveTap(day.dayIndex, 'lunch')"
             >
               <span class="rounded-lg bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-700">Lunch</span>
-              <p class="min-w-0 flex-1 truncate text-sm text-slate-900">{{ day.lunch?.mealName || 'No meal' }}</p>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm text-slate-900">{{ day.lunch?.mealName || 'No meal' }}</p>
+                <div v-if="day.lunch?.mealTags?.length" class="mt-1 flex flex-wrap gap-1">
+                  <span v-for="tag in day.lunch.mealTags" :key="tag" class="pill px-2 py-0.5 text-[10px]">
+                    {{ tag }}
+                  </span>
+                </div>
+              </div>
+              <span v-if="day.lunch?.isRepeated" class="rounded-full bg-violet-200 px-2 py-0.5 text-[10px]">×{{ day.lunch.repeatCount }}</span>
               <div class="flex items-center gap-2">
                 <button
                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm"
@@ -348,7 +356,15 @@
               @click="onMoveTap(day.dayIndex, 'dinner')"
             >
               <span class="rounded-lg bg-indigo-100 px-2 py-1 text-[10px] font-semibold text-indigo-700">Dinner</span>
-              <p class="min-w-0 flex-1 truncate text-sm text-slate-900">{{ day.dinner?.mealName || 'No meal' }}</p>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm text-slate-900">{{ day.dinner?.mealName || 'No meal' }}</p>
+                <div v-if="day.dinner?.mealTags?.length" class="mt-1 flex flex-wrap gap-1">
+                  <span v-for="tag in day.dinner.mealTags" :key="tag" class="pill px-2 py-0.5 text-[10px]">
+                    {{ tag }}
+                  </span>
+                </div>
+              </div>
+              <span v-if="day.dinner?.isRepeated" class="rounded-full bg-violet-200 px-2 py-0.5 text-[10px]">×{{ day.dinner.repeatCount }}</span>
               <div class="flex items-center gap-2">
                 <button
                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm"
